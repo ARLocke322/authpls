@@ -1,0 +1,6 @@
+module Auth
+  class UserSerializer < Panko::Serializer
+    attributes :id, :email_address, :admin, :created_at
+    has_many :sessions, serializer: SessionSerializer
+  end
+end

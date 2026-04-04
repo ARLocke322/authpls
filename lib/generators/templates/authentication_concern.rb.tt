@@ -1,0 +1,59 @@
+module Auth
+  module Authentication
+    extend ActiveSupport::Concern
+
+    included do
+      before_action :require_authentication
+    end
+
+    class_methods do
+      def allow_unauthenticated_access(**options)
+        skip_before_action :require_authentication, **options
+      end
+
+      def require_admin_access(**options)
+        before_action :verify_is_admin, **options
+      end
+    end
+
+    private
+
+    def require_authentication
+      resume_session || render_unauthorized
+    end
+
+    def render_unauthorized
+      render json: { error: 'Unauthorized' }, status: 401
+    end
+
+    def resume_session
+      Current.session ||= find_session_by_token
+    end
+
+    def find_session_by_token
+      authenticate_with_http_token do |token, _options|
+        Session.where(expires_at: Time.current..).find_by(token: token)
+      end
+    end
+
+    def start_new_session_for(user)
+      user.sessions.create!(
+        user_agent: request.user_agent,
+        ip_address: request.remote_ip,
+        expires_at: 6.hours.from_now
+      ).tap { |session| Current.session = session }
+    end
+
+    def terminate_session
+      Current.session.destroy
+    end
+
+    def verify_is_admin
+      render_forbidden unless Current.session.user.admin?
+    end
+
+    def render_forbidden
+      render json: { error: 'Forbidden' }, status: 403
+    end
+  end
+end
