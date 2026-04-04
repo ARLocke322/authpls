@@ -1,0 +1,62 @@
+module Auth
+  class RegistrationsController < ApplicationController
+    allow_unauthenticated_access only: :create
+    rate_limit to: 10, within: 3.minutes, only: :create, with: ApplicationController::RATE_LIMIT_RESPONSE
+
+    # Registers a user, requires a valid signup token from an admin
+    # Creates a session upon successful registration
+    # Renders token, + account info on success
+    # Renders error message on invalid request or unique constraint violation
+    def create
+      token = validate_signup_token
+      return unless token
+
+      user = register_user(token)
+      start_new_session_for user
+      render json: { token: Current.session.token, user: serializer.serialize(user) }, status: 201
+    rescue ActiveRecord::RecordInvalid => e
+      render json: { error: e.record.errors.full_messages.join(', ') }, status: 422
+    rescue ActiveRecord::RecordNotUnique
+      render json: { error: 'There was a problem creating your account' }, status: 422
+    end
+
+    private
+
+    # Validates a signup token
+    # Checkes token exists, is not expired, and has not already been used
+    # Returns the token if valid, returns nil + renders error if invalid
+    def validate_signup_token
+      token = SignupToken.find_by(token: params[:signup_token])
+      return render_error('Unauthorised', :unauthorized) unless token
+      return render_error('Token Expired', :unauthorized) if token.expires_at < Time.current
+      return render_error('Invalid Token', :unauthorized) if token.used_at
+
+      token
+    end
+
+    # Creates a user with the request params, updates the token to used
+    def register_user(token)
+      user = User.new(attributes)
+      User.transaction do
+        user.save!
+        token.update!(used_at: Time.current, user: user)
+      end
+      user
+    end
+
+    def render_error(msg, status)
+      render(json: { error: msg }, status:)
+      nil
+    end
+
+    def attributes
+      params.expect(registration: %i[email_address password password_confirmation])
+    end
+
+    def serializer
+      UserSerializer.new(
+        only: { instance: %i[id email_address created_at admin] }
+      )
+    end
+  end
+end

@@ -1,0 +1,24 @@
+module Auth
+  class SignupTokensController < ApplicationController
+    require_admin_access
+    rate_limit to: 20, within: 1.hour, with: ApplicationController::RATE_LIMIT_RESPONSE
+
+    # Create a signup token to be used to create an account
+    def create
+      signup_token = SignupToken.new(expires_at: 24.hours.from_now)
+      if signup_token.save
+        render json: serializer.serialize_to_json(signup_token), status: :created
+      else
+        render json: signup_token.errors, status: :unprocessable_content
+      end
+    end
+
+    private
+
+    def serializer
+      SignupTokenSerializer.new(
+        only: { instance: %i[token expires_at] }
+      )
+    end
+  end
+end

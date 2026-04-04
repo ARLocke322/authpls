@@ -1,0 +1,40 @@
+module Auth
+  class ProfilesController < ApplicationController
+    rate_limit to: 10, within: 5.minutes, with: ApplicationController::RATE_LIMIT_RESPONSE
+
+    def show
+      render json: serializer.serialize_to_json(Current.session.user)
+    end
+
+    def update
+      user = Current.session.user
+      user.attributes = attributes
+
+      if user.save
+        render json: serializer.serialize_to_json(user)
+      else
+        render json: user.errors, status: :unprocessable_content
+      end
+    end
+
+    def destroy
+      if Current.session.user.destroy
+        head :no_content
+      else
+        head :unprocessable_content
+      end
+    end
+
+    private
+
+    def attributes
+      params.expect(profile: %i[email_address])
+    end
+
+    def serializer
+      UserSerializer.new(
+        only: { instance: %i[id email_address admin] }
+      )
+    end
+  end
+end

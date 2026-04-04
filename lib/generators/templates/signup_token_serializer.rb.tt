@@ -1,0 +1,5 @@
+module Auth
+  class SignupTokenSerializer < Panko::Serializer
+    attributes :id, :token, :expires_at, :used_at
+  end
+end

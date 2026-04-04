@@ -19,6 +19,7 @@ module Authpls
             rescue_from ActiveRecord::RecordNotFound do
               render json: { error: 'Not found' }, status: :not_found
             end
+            RATE_LIMIT_RESPONSE = -> { render json: { error: 'Try again later' }, status: :too_many_requests }
           RUBY
         end
       end
@@ -30,20 +31,20 @@ module Authpls
         template "passwords_controller.rb.tt", "app/controllers/auth/passwords_controller.rb"
         template "registrations_controller.rb.tt", "app/controllers/auth/registrations_controller.rb"
         template "signup_tokens_controller.rb.tt", "app/controllers/auth/signup_tokens_controller.rb"
-        template "authentication_concern.rb.tt", "app/controllers/auth/concerns/authentication.rb"
+        template "authentication_concern.rb.tt", "app/controllers/concerns/auth/authentication.rb"
       end
 
       def copy_migrations
-        migration_template "users_migration.rb.tt", "db/migrate/auth/create_users.rb"
-        migration_template "sessions_migration.rb.tt", "db/migrate/auth/create_sessions.rb"
-        migration_template "signup_tokens_migration.rb.tt", "db/migrate/auth/create_signup_tokens.rb"
+        migration_template "users_migration.rb.tt", "db/migrate/create_users.rb"
+        migration_template "sessions_migration.rb.tt", "db/migrate/create_sessions.rb"
+        migration_template "signup_tokens_migration.rb.tt", "db/migrate/create_signup_tokens.rb"
       end
 
       def copy_models
         template "user_model.rb.tt", "app/models/auth/user.rb"
         template "session_model.rb.tt", "app/models/auth/session.rb"
         template "signup_token_model.rb.tt", "app/models/auth/signup_token.rb"
-        template "current_model.rb.tt", "app/models/auth/current.rb"
+        template "current_model.rb.tt", "app/models/current.rb"
       end
 
       def copy_jobs

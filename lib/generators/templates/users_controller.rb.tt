@@ -1,0 +1,62 @@
+module Auth
+  class UsersController < ApplicationController
+    require_admin_access
+    rate_limit to: 30, within: 1.minute, with: ApplicationController::RATE_LIMIT_RESPONSE
+
+    # Get all users
+    # Renders all users and their sessions
+    # TODO: include only active sessions
+    def index
+      users = User.all.includes(:sessions)
+      render json: Panko::ArraySerializer.new(
+        users,
+        each_serializer: UserSerializer,
+        only: { instance: %i[id email_address created_at admin sessions],
+                sessions: { instance: %i[id ip_address user_agent created_at] } }
+      ).to_json, status: :ok
+    end
+
+    # Get and render a user for a given id
+    def show
+      render json: serializer.serialize_to_json(user)
+    end
+
+    # Update and render user for a given id with a set of attributes
+    def update
+      user.attributes = attributes
+
+      if user.save
+        render json: serializer.serialize_to_json(user)
+      else
+        render json: user.errors, status: :unprocessable_content
+      end
+    end
+
+    # Delete a user for a given id
+    def destroy
+      if user.destroy
+        head :no_content
+      else
+        head :unprocessable_content
+      end
+    end
+
+    private
+
+    # Find a user from an id param
+    def user
+      @user ||= User.find(params[:id])
+    end
+
+    def attributes
+      params.expect(user: %i[email_address password password_confirmation])
+    end
+
+    def serializer
+      UserSerializer.new(
+        only: { instance: %i[id email_address created_at admin sessions],
+                sessions: { instance: %i[id ip_address user_agent created_at] } }
+      )
+    end
+  end
+end

@@ -1,0 +1,5 @@
+module Auth
+  class SessionSerializer < Panko::Serializer
+    attributes :id, :ip_address, :user_agent, :created_at
+  end
+end
