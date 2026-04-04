@@ -1,7 +1,7 @@
 module Auth
   class CleanupExpiredSessionsJob < ApplicationJob
     def perform
-      Session.where(expires_at: Time.current..).delete_all
+      Session.where(expires_at: ..Time.current).delete_all
     end
   end
 end
