@@ -20,6 +20,10 @@ module Authpls
               render json: { error: 'Not found' }, status: :not_found
             end
             RATE_LIMIT_RESPONSE = -> { render json: { error: 'Try again later' }, status: :too_many_requests }
+            def handle_argument_errors(e)
+              logger.error e.full_message
+              render json: { error: e.message }, status: :unprocessable_content
+            end
           RUBY
         end
       end

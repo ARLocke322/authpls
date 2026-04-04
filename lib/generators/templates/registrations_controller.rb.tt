@@ -23,7 +23,7 @@ module Auth
     private
 
     # Validates a signup token
-    # Checkes token exists, is not expired, and has not already been used
+    # Checks token exists, is not expired, and has not already been used
     # Returns the token if valid, returns nil + renders error if invalid
     def validate_signup_token
       token = SignupToken.find_by(token: params[:signup_token])
