@@ -72,7 +72,7 @@ module Authpls
             resource :registration, only: %i[create]
             resource :profile, only: %i[show update destroy]
             resources :users, only: %i[index show update destroy]
-            resources :passwords, only: %i[create update]
+            resources :passwords, only: %i[create update], param: :token
             resources :signup_tokens, only: %i[create]
           end
         RUBY
